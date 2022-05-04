@@ -1,0 +1,323 @@
+Hi Tony,
+ 
+  Kafka 
+ 
+To Change the hostname in Hosts 
+·       cd /etc/hosts 
+·        
+·       192.168.44.34 kafka1 
+·       192.168.44.34 zookeeper1 
+·       sudo useradd kafka -m 
+·       sudo passwd kafka 
+·       sudo adduser kafka sudo 
+·       su -l kafka 
+·        
+·       sudo apt-get update -y 
+·       sudo apt-get install -y wget ca-certificates zip net-tools vim nano tar netcat 
+·        
+·       wget http://apache.mirror.digitalpacific.com.au/kafka/2.7.0/kafka_2.13-2.7.0.tgz 
+·       tar -xvf kafka_2.13-2.7.0.tgz 
+·        
+·       mv  kafka-2.7.0-src.tgz kafka 
+·       cd kafka 
+·        
+·       sudo apt-get install openjdk-8-jre 
+·        
+·       /root/kafka/config/zookeeper.properties 
+·        
+·       ./zookeeper-server-start.sh /root/kafka/config/zookeeper.properties 
+·        
+·       ps -ef | grep -i zookeeper 
+·        
+·       ./zookeeper-server-start.sh -daemon /root/kafka/config/zookeeper.properties 
+·        
+·       ./kafka-server-start.sh -daemon /root/kafka/config/server.properties 
+·        
+·       echo “ruok” | nc localhost 2181 ; echo 
+·        
+·        
+·       echo “ruok” | nc 34.227.157.41 2181 ; echo 
+·        
+·       echo “1” > data/zookeeper/myid 
+ 
+ 
+ 
+ 
+·       chmod +x /etc/init.d/zookeeper 
+·       ll /etc/init.d/zookeeper 
+·       update-rc.d zookeeper defaults 
+·       service zookeeper start 
+·       service zookeeper status 
+·        
+·       datadir= /root/kafka/data/zookeeper 
+·       tickTime-2000 
+·       initLimit=10 
+·       syncLimit=5 
+·       41w.commands.whitelist=* 
+·       server.1=zookeeper1:2888:3888 
+·       server.2=zookeeper2:2888:3888 
+·       server.3=zookeeper3:2888:3888 
+·        
+·       Mkdir -p /data/zookeeper 
+·        
+·       vim /etc/init.d/zookeeper 
+·        
+·        
+·       #!/bin/bash 
+·       #/etc/init.d/zookeeper 
+·       DAEMON_PATH=/root/kafka/bin 
+·       DAEMON_NAME=zookeeper 
+·       # check that networking is up. 
+·       # [ ${NETWORKING} = "no" ] && exit 0 
+ 
+                  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+PATH=$PATH:$DAEMON_PATH 
+ 
+# see how we are called. 
+case "$1" in 
+  start) 
+        # start daemon. 
+        pid= 'ps ax | gerp -i 'org.apache.zookeeper' | grep -v grep | awk '{print $1}'' 
+        if [ -n "$pid"] 
+          then 
+            echo "zookeeper is already running"; 
+        else 
+          echo "starting $DAEMON_NAME"; 
+          $DAEMON_PATH/zookeeper-server-start.sh -daemon /root/kafka/config/zookeeper.properties 
+        fi 
+        ;; 
+  stop) 
+        echo "shuting down $DAEMON_NAME"; 
+        $DAEMON_PATH/zookeeper-server-stop.sh 
+        ;; 
+  restart) 
+        $0 stop 
+        sleep 2 
+        $0 start 
+  status) 
+        pid= 'ps ax | gerp -i 'org.apache.zookeeper' | grep -v grep | awk '{print $1}'' 
+        if [ -n "$pid"] 
+          then 
+          echo "zookeeper is running as PID: $pid" 
+        else 
+          echo "zookeeper is not running"; 
+        fi 
+        ;; 
+  *) 
+           echo "usage: $0 {start|stop|restart|status}" 
+           exit 1 
+esac 
+ 
+exit 0 
+ 
+ 
+ 
+ 
+ 
+auto.create.topics.enable=true 
+ 
+ 
+·       ./kafka-server-start.sh -daemon /root/kafka/config/server.properties 
+·        
+·       ps -ef | grep -i kafka 
+·        
+·       nc -vz zookeeper1 2181 
+·       nc -vz kafka1 9092 
+·        
+·       ./kafka-topics.sh --create --topic bharath --bootstrap-server kafka1:9092 --partitions 3 --replicatin-factor 1 
+·        
+·       ./kafka-topics.sh --zookeeper zookeeper1:2181 --list 
+·        
+·       vim etc/hosts 
+·        
+·       18.208.143.164  kafka1 
+·       18.208.143.164  zookeeper1 
+ 
+/var/log/zookeeper/console.log 
+ 
+ 
+Creating the Topic: 
+ 
+ 
+root@ip-172-31-66-181:~/kafka/bin# ./kafka-topics.sh --create --topic quickstart-events --bootstrap-server kafka1:9092 
+Created topic quickstart-events. 
+root@ip-172-31-66-181:~/kafka/bin# ./kafka-topics.sh --describe --topic quickstart-events --bootstrap-server kafka1:9092 
+Topic: quickstart-events PartitionCount: 3 ReplicationFactor: 1 Configs: segment.bytes=1073741824 
+Topic: quickstart-events Partition: 0 Leader: 0 Replicas: 0 Isr: 0 
+Topic: quickstart-events Partition: 1 Leader: 0 Replicas: 0 Isr: 0 
+Topic: quickstart-events Partition: 2 Leader: 0 Replicas: 0 Isr: 0 
+root@ip-172-31-66-181:~/kafka/bin# ./kafka-console-producer.sh --topic quickstart-events --bootstrap-server kafka1:9092 
+>This is my first event 
+>This is my second event 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+root@ip-172-31-66-181:~/kafka/bin# ./kafka-console-consumer.sh --topic quickstart-events --from-beginning --bootstrap-server kafka1:9092 
+This is my first event 
+4 
+5 
+6 
+98 
+This is my second event 
+ 
+ 
+./zookeeper-shell.sh zookeeper1:2181 
+ 
+root@ip-172-31-66-181:~/kafka/bin# ./zookeeper-shell.sh zookeeper1:2181 
+Connecting to zookeeper1:2181 
+Welcome to ZooKeeper! 
+JLine support is disabled 
+ 
+WATCHER:: 
+ 
+./kafka-topics.sh --create --topic states --bootstrap-server kafka1:9092 --replication-factor 1 --partitions 3 
+ 
+./kafka-topics.sh --bootstrap-server kafka1:9092 --list 
+ 
+./kafka-topics.sh --bootstrap-server kafka1:9092 --describe --topic states  
+ 
+./kafka-console-producer.sh --bootstrap-server kafka1:9092 --topic states  (or) 
+ 
+./kafka-console-producer.sh --broker-list kafka1:9092 --topic states 
+ 
+./kafka-console-consumer.sh --bootstrap-server kafka1:9092 --topic states --from-beginning 
+ 
+checking logs 
+ 
+cd ../data/ 
+ 
+ 
+Partition: 2 
+ 
+ 
+root@ip-172-31-66-181:~/kafka/bin# ./kafka-console-consumer.sh --bootstrap-server kafka1:9092 --topic states --from-beginning --partition 2 
+hyd 
+vz 
+mp 
+behar 
+kerala 
+jammu 
+^CProcessed a total of 6 messages 
+root@ip-172-31-66-181:~/kafka/bin# ./kafka-console-consumer.sh --bootstrap-server kafka1:9092 --topic states --from-beginning --partition 1 
+chennai 
+up 
+delhi 
+pune 
+^CProcessed a total of 4 messages 
+root@ip-172-31-66-181:~/kafka/bin# ./kafka-console-consumer.sh --bootstrap-server kafka1:9092 --topic states --from-beginning --partition 0 
+bangalore 
+mumbai 
+goa 
+rjastan 
+^CProcessed a total of 4 messages 
+root@ip-172-31-66-181:~/kafka/bin#  
+root@ip-172-31-66-181:~/kafka/bin# ./kafka-console-consumer.sh --bootstrap-server kafka1:9092 --topic states --offset 1 --partition 0 
+mumbai 
+goa 
+rjastan 
+^CProcessed a total of 3 messages 
+root@ip-172-31-66-181:~/kafka/bin#  
+ 
+./kafka-console-consumer.sh --bootstrap-server kafka1:9092 --topic states --group states --from-beginning 
+root@ip-172-31-66-181:~/kafka/bin# ./kafka-console-consumer.sh --bootstrap-server kafka1:9092 --topic states --group states --from-beginning 
+hyd 
+vz 
+mp 
+behar 
+kerala 
+jammu 
+bangalore 
+mumbai 
+goa 
+rjastan 
+chennai 
+up 
+delhi 
+pune 
+^CProcessed a total of 14 messages 
+root@ip-172-31-66-181:~/kafka/bin# ./kafka-console-producer.sh --broker-list kafka1:9092 --topic states 
+>a 
+>b 
+>c 
+>d 
+root@ip-172-31-66-181:~/kafka/bin# ./kafka-console-consumer.sh --bootstrap-server kafka1:9092 --topic states --from-beginning 
+hyd 
+vz 
+mp 
+behar 
+kerala 
+jammu 
+a 
+c 
+bangalore 
+mumbai 
+goa 
+rjastan 
+b 
+chennai 
+up 
+delhi 
+pune 
+d 
+^CProcessed a total of 18 messages 
+./kafka-console-consumer.sh --bootstrap-server kafka1:9092 --topic states --group statesagain --from-beginning 
+ 
+root@ip-172-31-66-181:~/kafka/bin# ./kafka-consumer-groups.sh --bootstrap-server kafka1:9092 --list 
+--list 
+statesagain 
+states 
+root@ip-172-31-66-181:~/kafka/bin#  
+ 
+./kafka-topics.sh --bootstrap-server kafka1:9092 --list 
+ 
+ 
+root@ip-172-31-66-181:~/kafka/bin# ./kafka-topics.sh --bootstrap-server kafka1:9092 --list 
+__consumer_offsets 
+quickstart-events 
+states 
+root@ip-172-31-66-181:~/kafka/bin#  
+ 
+root@ip-172-31-66-181:~/kafka/bin# ./kafka-topics.sh --bootstrap-server kafka1:9092 --describe --topic states 
+Topic: states PartitionCount: 3 ReplicationFactor: 1 Configs: segment.bytes=1073741824 
+Topic: states Partition: 0 Leader: 0 Replicas: 0 Isr: 0 
+Topic: states Partition: 1 Leader: 0 Replicas: 0 Isr: 0 
+Topic: states Partition: 2 Leader: 0 Replicas: 0 Isr: 0 
+root@ip-172-31-66-181:~/kafka/bin# 
+./kafka-producer-perf-test.sh --topic states --num-records 10 --throughput 5 --record-size 10 --producer-props --bootstrap-server=kafka1:9092  
+ 
+Performance-Test: 
+ 
+root@ip-172-31-66-181:~/kafka/bin# ./kafka-producer-perf-test.sh --topic bharath --throughput -1 --num-records 3000000 --record-size 1024 --producer-props acks=all bootstrap.servers=kafka1:9092 
+ 
+152160 records sent, 30425.9 records/sec (29.71 MB/sec), 760.3 ms avg latency, 1112.0 ms max latency. 
+234315 records sent, 46863.0 records/sec (45.76 MB/sec), 663.6 ms avg latency, 850.0 ms max latency. 
+261060 records sent, 52212.0 records/sec (50.99 MB/sec), 596.9 ms avg latency, 850.0 ms max latency. 
+365430 records sent, 73086.0 records/sec (71.37 MB/sec), 425.4 ms avg latency, 687.0 ms max latency. 
+389610 records sent, 77922.0 records/sec (76.10 MB/sec), 394.1 ms avg latency, 522.0 ms max latency. 
+387360 records sent, 77472.0 records/sec (75.66 MB/sec), 396.1 ms avg latency, 517.0 ms max latency. 
+356715 records sent, 71343.0 records/sec (69.67 MB/sec), 430.5 ms avg latency, 557.0 ms max latency. 
+390735 records sent, 78147.0 records/sec (76.32 MB/sec), 393.2 ms avg latency, 508.0 ms max latency. 
+388980 records sent, 77796.0 records/sec (75.97 MB/sec), 394.5 ms avg latency, 561.0 ms max latency. 
+3000000 records sent, 65149.409312 records/sec (63.62 MB/sec), 459.72 ms avg latency, 1112.00 ms max latency, 430 ms 50th, 749 ms 95th, 844 ms 99th, 1079 ms 99.9th. 
+                                                 
+================END==========XXX============================== 
