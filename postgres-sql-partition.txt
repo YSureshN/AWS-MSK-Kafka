@@ -1,0 +1,303 @@
+postgres=# create table grades_org (id serial not null, g int not null);
+
+insert into grades_org(g) select floor (random()*100) from generate_series (0,1000000);
+
+create index grades_org_index on grades_org(g);
+ 
+postgres=# \d grades_org;
+
+select count(*) from  grades_org where g = 30;
+
+explain analyze select count(*) from grades_org where g = 30;
+
+create table g1020 (like grades_org including indexes);
+
+alter table grades_org attach partition g1020 for values from (0) to (35);
+
+insert into grades_org select * from grades_org;
+
+INSERT 0 1000001 
+
+https://www.postgresql.org/docs/10/ddl-partitioning.html
+
+-------------------------
+
+
+docker run --name pgmain -d -e POSTGRES_PASSWORD=postgres postgres
+
+docker ps
+
+docker exec -it pgmain bash
+
+psql --u postgres
+
+\l (list of databases)
+
+\c database-name (connect to particular database)
+\dt (list of tables in database)
+\d table-name (information about table)
+
+\d+ table-name (table and partition information)
+
+create table suresh_table (cusid integer, cname varchar) partition by range (cusid);
+
+CREATE TABLE cpart1 PARTITION OF suresh_table
+    FOR VALUES FROM ('0') TO ('1001');
+
+
+CREATE TABLE cpart2 PARTITION OF suresh_table
+    FOR VALUES FROM ('1001') TO ('2001');
+
+CREATE TABLE suresh_y2006m02 PARTITION OF suresh_table
+    FOR VALUES FROM ('2006-02-01') TO ('2006-03-01');
+
+insert into suresh_table values (1,'suresh');
+
+insert into suresh_table values (2,'Niki');
+insert into suresh_table values (3,'priya');
+
+insert into suresh_table values (1002,'siri');
+insert into suresh_table values (1003,'Rohini');
+
+
+ALTER TABLE suresh_table DETACH PARTITION cpart1;
+
+ALTER TABLE suresh_table ATTACH PARTITION cpart1
+    FOR VALUES FROM ('0') TO ('1001' );
+
+
+------------------------------
+
+
+Sharding Partitions for postgressql
+
+example code with postgress 
+
+1. spin up 3 postgres instances with identical schema 5432, 5433,5434
+
+2. write to the sharded databases
+3. reads from the sharded databases.
+
+postgres=# \dt
+                  List of relations
+ Schema |     Name     |       Type        |  Owner
+--------+--------------+-------------------+----------
+ public | grades_org   | table             | postgres
+ public | suresh_table | partitioned table | postgres
+(2 rows)
+
+postgres=# \d suresh_table
+           Partitioned table "public.suresh_table"
+ Column |       Type        | Collation | Nullable | Default
+--------+-------------------+-----------+----------+---------
+ cusid  | integer           |           |          |
+ cname  | character varying |           |          |
+Partition key: RANGE (cusid)
+Number of partitions: 0
+
+postgres=# CREATE TABLE cpart1 PARTITION OF suresh_table
+postgres-#     FOR VALUES FROM ('0') TO ('1001');
+CREATE TABLE
+postgres=# \d suresh_table
+           Partitioned table "public.suresh_table"
+ Column |       Type        | Collation | Nullable | Default
+--------+-------------------+-----------+----------+---------
+ cusid  | integer           |           |          |
+ cname  | character varying |           |          |
+Partition key: RANGE (cusid)
+Number of partitions: 1 (Use \d+ to list them.)
+
+postgres=# CREATE TABLE cpart2 PARTITION OF suresh_table
+ FOR postgres-#     FOR VALUES FROM ('1001') TO ('2001');
+CREATE TABLE
+postgres=# \d suresh_table
+           Partitioned table "public.suresh_table"
+ Column |       Type        | Collation | Nullable | Default
+--------+-------------------+-----------+----------+---------
+ cusid  | integer           |           |          |
+ cname  | character varying |           |          |
+Partition key: RANGE (cusid)
+Number of partitions: 2 (Use \d+ to list them.)
+
+postgres=# \d+ suresh_table
+                               Partitioned table "public.suresh_table"
+ Column |       Type        | Collation | Nullable | Default | Storage  | Stats target | Description
+--------+-------------------+-----------+----------+---------+----------+--------------+-------------
+ cusid  | integer           |           |          |         | plain    |              |
+ cname  | character varying |           |          |         | extended |              |
+Partition key: RANGE (cusid)
+Partitions: cpart1 FOR VALUES FROM (0) TO (1001),
+            cpart2 FOR VALUES FROM (1001) TO (2001)
+
+postgres=# select * from cpart1;
+ cusid | cname
+-------+-------
+(0 rows)
+
+postgres=# select * from cpart2;
+ cusid | cname
+-------+-------
+(0 rows)
+
+postgres=# insert into suresh_table values (1,"suresh");
+ERROR:  column "suresh" does not exist
+LINE 1: insert into suresh_table values (1,"suresh");
+                                           ^
+postgres=# insert into suresh_table values (1,'suresh');
+INSERT 0 1
+postgres=# insert into suresh_table values (2,'Niki');
+INSERT 0 1
+postgres=# insert into suresh_table values (3,'priya');
+INSERT 0 1
+postgres=# select * from cpart2;
+ cusid | cname
+-------+-------
+(0 rows)
+
+postgres=# select * from cpart1;
+ cusid | cname
+-------+--------
+     1 | suresh
+     2 | Niki
+     3 | priya
+(3 rows)
+
+postgres=# insert into suresh_table values (1002,'siri');
+INSERT 0 1
+postgres=# select * from cpart2;
+ cusid | cname
+-------+-------
+  1002 | siri
+(1 row)
+
+postgres=# insert into suresh_table values (1003,'Rohini');
+INSERT 0 1
+postgres=# insert into suresh_table values (1003,'Rohini');
+INSERT 0 1
+postgres=# select * from cpart2;
+ cusid | cname
+-------+--------
+  1002 | siri
+  1003 | Rohini
+  1003 | Rohini
+(3 rows)
+
+postgres=# ALTER TABLE suresh_table DETACH PARTITION cpart1;
+ALTER TABLE
+postgres=# \d+ suresh_table
+                               Partitioned table "public.suresh_table"
+ Column |       Type        | Collation | Nullable | Default | Storage  | Stats target | Description
+--------+-------------------+-----------+----------+---------+----------+--------------+-------------
+ cusid  | integer           |           |          |         | plain    |              |
+ cname  | character varying |           |          |         | extended |              |
+Partition key: RANGE (cusid)
+Partitions: cpart2 FOR VALUES FROM (1001) TO (2001)
+
+postgres=# \d suresh_table
+           Partitioned table "public.suresh_table"
+ Column |       Type        | Collation | Nullable | Default
+--------+-------------------+-----------+----------+---------
+ cusid  | integer           |           |          |
+ cname  | character varying |           |          |
+Partition key: RANGE (cusid)
+Number of partitions: 1 (Use \d+ to list them.)
+
+postgres=# \d+ suresh_table
+                               Partitioned table "public.suresh_table"
+ Column |       Type        | Collation | Nullable | Default | Storage  | Stats target | Description
+--------+-------------------+-----------+----------+---------+----------+--------------+-------------
+ cusid  | integer           |           |          |         | plain    |              |
+ cname  | character varying |           |          |         | extended |              |
+Partition key: RANGE (cusid)
+Partitions: cpart2 FOR VALUES FROM (1001) TO (2001)
+
+postgres=# select * from cpart1;
+ cusid | cname
+-------+--------
+     1 | suresh
+     2 | Niki
+     3 | priya
+(3 rows)
+
+postgres=# select * from cpart2;
+ cusid | cname
+-------+--------
+  1002 | siri
+  1003 | Rohini
+  1003 | Rohini
+(3 rows)
+
+postgres=# ALTER TABLE suresh_table ATTACH PARTITION cpart1;
+ERROR:  syntax error at or near ";"
+LINE 1: ALTER TABLE suresh_table ATTACH PARTITION cpart1;
+                                                        ^
+postgres=# \d+ suresh_table
+                               Partitioned table "public.suresh_table"
+ Column |       Type        | Collation | Nullable | Default | Storage  | Stats target | Description
+--------+-------------------+-----------+----------+---------+----------+--------------+-------------
+ cusid  | integer           |           |          |         | plain    |              |
+ cname  | character varying |           |          |         | extended |              |
+Partition key: RANGE (cusid)
+Partitions: cpart2 FOR VALUES FROM (1001) TO (2001)
+
+postgres=# ALTER TABLE suresh_table ATTACH PARTITION cpart1
+postgres-# \d+ suresh_table
+                               Partitioned table "public.suresh_table"
+ Column |       Type        | Collation | Nullable | Default | Storage  | Stats target | Description
+--------+-------------------+-----------+----------+---------+----------+--------------+-------------
+ cusid  | integer           |           |          |         | plain    |              |
+ cname  | character varying |           |          |         | extended |              |
+Partition key: RANGE (cusid)
+Partitions: cpart2 FOR VALUES FROM (1001) TO (2001)
+
+postgres-# ALTER TABLE suresh_table ATTACH PARTITION cpart1;
+ERROR:  syntax error at or near "ALTER"
+LINE 2: ALTER TABLE suresh_table ATTACH PARTITION cpart1;
+        ^
+postgres=# \dt
+                  List of relations
+ Schema |     Name     |       Type        |  Owner
+--------+--------------+-------------------+----------
+ public | cpart1       | table             | postgres
+ public | cpart2       | table             | postgres
+ public | grades_org   | table             | postgres
+ public | suresh_table | partitioned table | postgres
+(4 rows)
+
+postgres=# ALTER TABLE suresh_table ATTACH PARTITION cpart1
+postgres-#     FOR VALUES FROM ('0') TO ('1001' );
+ALTER TABLE
+postgres=# \d+ suresh_table
+                               Partitioned table "public.suresh_table"
+ Column |       Type        | Collation | Nullable | Default | Storage  | Stats target | Description
+--------+-------------------+-----------+----------+---------+----------+--------------+-------------
+ cusid  | integer           |           |          |         | plain    |              |
+ cname  | character varying |           |          |         | extended |              |
+Partition key: RANGE (cusid)
+Partitions: cpart1 FOR VALUES FROM (0) TO (1001),
+            cpart2 FOR VALUES FROM (1001) TO (2001)
+
+postgres=# select * from cpart1;
+ cusid | cname
+-------+--------
+     1 | suresh
+     2 | Niki
+     3 | priya
+(3 rows)
+
+postgres=#                                                  
+
+----------------------------------
+Sharding Partitions
+
+
+
+
+
+docker system prune
+
+docker volume prune
+
+docker network prune
+
+https://www.digitalocean.com/community/tutorials/how-to-remove-docker-images-containers-and-volumes
