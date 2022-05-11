@@ -1,0 +1,805 @@
+cd /etc/hosts
+
+192.168.44.34 kafka1
+192.168.44.34 zookeeper1
+
+sudo useradd kafka -m
+
+sudo passwd kafka
+
+sudo adduser kafka sudo
+
+su -l kafka
+
+sudo apt-get update -y
+sudo apt-get install -y wget ca-certificates zip net-tools vim nano tar netcat
+
+wget http://apache.mirror.digitalpacific.com.au/kafka/2.7.0/kafka_2.13-2.7.0.tgz
+tar -xvf kafka_2.13-2.7.0.tgz
+
+mv  kafka-2.7.0-src.tgz kafka
+cd kafka
+
+sudo apt-get install openjdk-8-jre
+
+/root/kafka/config/zookeeper.properties
+
+./zookeeper-server-start.sh /root/kafka/config/zookeeper.properties
+
+ps -ef | grep -i zookeeper
+
+./zookeeper-server-start.sh -daemon /root/kafka/config/zookeeper.properties
+
+./kafka-server-start.sh -daemon /root/kafka/config/server.properties
+
+echo “ruok” | nc localhost 2181 ; echo
+
+
+echo “ruok” | nc 34.227.157.41 2181 ; echo
+
+echo “1” > data/zookeeper/myid
+
+
+chmod +x /etc/init.d/zookeeper
+ll /etc/init.d/zookeeper
+update-rc.d zookeeper defaults
+service zookeeper start
+service zookeeper status
+
+datadir= /root/kafka/data/zookeeper
+tickTime-2000
+initLimit=10
+syncLimit=5
+41w.commands.whitelist=*
+server.1=zookeeper1:2888:3888
+server.2=zookeeper2:2888:3888
+server.3=zookeeper3:2888:3888
+
+Mkdir -p /data/zookeeper
+
+vim /etc/init.d/zookeeper
+
+
+#!/bin/bash
+#/etc/init.d/zookeeper
+DAEMON_PATH=/root/kafka/bin
+DAEMON_NAME=zookeeper
+# check that networking is up.
+# [ ${NETWORKING} = "no" ] && exit 0
+
+PATH=$PATH:$DAEMON_PATH
+
+# see how we are called.
+case "$1" in
+  start)
+        # start daemon.
+        pid= 'ps ax | gerp -i 'org.apache.zookeeper' | grep -v grep | awk '{print $1}''
+        if [ -n "$pid"]
+          then
+            echo "zookeeper is already running";
+        else
+          echo "starting $DAEMON_NAME";
+          $DAEMON_PATH/zookeeper-server-start.sh -daemon /root/kafka/config/zookeeper.properties
+        fi
+        ;;
+  stop)
+        echo "shuting down $DAEMON_NAME";
+        $DAEMON_PATH/zookeeper-server-stop.sh
+        ;;
+  restart)
+        $0 stop
+        sleep 2
+        $0 start
+  status)
+        pid= 'ps ax | gerp -i 'org.apache.zookeeper' | grep -v grep | awk '{print $1}''
+        if [ -n "$pid"]
+          then
+          echo "zookeeper is running as PID: $pid"
+        else
+          echo "zookeeper is not running";
+        fi
+        ;;
+  *)
+           echo "usage: $0 {start|stop|restart|status}"
+           exit 1
+esac
+
+exit 0
+
+=============
+
+auto.create.topics.enable=true
+
+
+./kafka-server-start.sh -daemon /root/kafka/config/server.properties
+
+ps -ef | grep -i kafka
+
+nc -vz zookeeper1 2181
+nc -vz kafka1 9092
+
+./kafka-topics.sh --create --topic bharath --bootstrap-server kafka1:9092 --partitions 3 --replicatin-factor 1
+
+./kafka-topics.sh --zookeeper zookeeper1:2181 --list
+
+vim etc/hosts
+
+18.208.143.164  kafka1
+18.208.143.164  zookeeper1
+
+/var/log/zookeeper/console.log
+
+
+root@ip-172-31-66-181:~/kafka/bin# ./kafka-topics.sh --create --topic quickstart-events --bootstrap-server kafka1:9092
+Created topic quickstart-events.
+root@ip-172-31-66-181:~/kafka/bin# ./kafka-topics.sh --describe --topic quickstart-events --bootstrap-server kafka1:9092
+Topic: quickstart-events	PartitionCount: 3	ReplicationFactor: 1	Configs: segment.bytes=1073741824
+	Topic: quickstart-events	Partition: 0	Leader: 0	Replicas: 0	Isr: 0
+	Topic: quickstart-events	Partition: 1	Leader: 0	Replicas: 0	Isr: 0
+	Topic: quickstart-events	Partition: 2	Leader: 0	Replicas: 0	Isr: 0
+root@ip-172-31-66-181:~/kafka/bin# ./kafka-console-producer.sh --topic quickstart-events --bootstrap-server kafka1:9092
+>This is my first event
+>This is my second event
+
+
+root@ip-172-31-66-181:~/kafka/bin# ./kafka-console-consumer.sh --topic quickstart-events --from-beginning --bootstrap-server kafka1:9092
+This is my first event
+4
+5
+6
+98
+This is my second event
+
+------------
+
+./zookeeper-shell.sh zookeeper1:2181
+
+root@ip-172-31-66-181:~/kafka/bin# ./zookeeper-shell.sh zookeeper1:2181
+Connecting to zookeeper1:2181
+Welcome to ZooKeeper!
+JLine support is disabled
+
+WATCHER::
+
+./kafka-topics.sh --create --topic states --bootstrap-server kafka1:9092 --replication-factor 1 --partitions 3
+
+./kafka-topics.sh --bootstrap-server kafka1:9092 --list
+
+./kafka-topics.sh --bootstrap-server kafka1:9092 --describe --topic states 
+
+./kafka-console-producer.sh --bootstrap-server kafka1:9092 --topic states  (or)
+
+./kafka-console-producer.sh --broker-list kafka1:9092 --topic states
+
+./kafka-console-consumer.sh --bootstrap-server kafka1:9092 --topic states --from-beginning
+
+checking logs
+
+cd ../data/
+
+
+Partition: 2
+
+root@ip-172-31-66-181:~/kafka/bin# ./kafka-console-consumer.sh --bootstrap-server kafka1:9092 --topic states --from-beginning --partition 2
+hyd
+vz
+mp
+behar
+kerala
+jammu
+^CProcessed a total of 6 messages
+root@ip-172-31-66-181:~/kafka/bin# ./kafka-console-consumer.sh --bootstrap-server kafka1:9092 --topic states --from-beginning --partition 1
+chennai
+up
+delhi
+pune
+^CProcessed a total of 4 messages
+root@ip-172-31-66-181:~/kafka/bin# ./kafka-console-consumer.sh --bootstrap-server kafka1:9092 --topic states --from-beginning --partition 0
+bangalore
+mumbai
+goa
+rjastan
+^CProcessed a total of 4 messages
+root@ip-172-31-66-181:~/kafka/bin# 
+
+root@ip-172-31-66-181:~/kafka/bin# ./kafka-console-consumer.sh --bootstrap-server kafka1:9092 --topic states --offset 1 --partition 0
+mumbai
+goa
+rjastan
+^CProcessed a total of 3 messages
+root@ip-172-31-66-181:~/kafka/bin# 
+
+./kafka-console-consumer.sh --bootstrap-server kafka1:9092 --topic states --group states --from-beginning
+
+root@ip-172-31-66-181:~/kafka/bin# ./kafka-console-consumer.sh --bootstrap-server kafka1:9092 --topic states --group states --from-beginning
+hyd
+vz
+mp
+behar
+kerala
+jammu
+bangalore
+mumbai
+goa
+rjastan
+chennai
+up
+delhi
+pune
+^CProcessed a total of 14 messages
+root@ip-172-31-66-181:~/kafka/bin# 
+
+root@ip-172-31-66-181:~/kafka/bin# ./kafka-consumer-groups.sh --bootstrap-server kafka1:9092 --list
+states
+root@ip-172-31-66-181:~/kafka/bin# 
+
+root@ip-172-31-66-181:~/kafka/bin# ./kafka-console-consumer.sh --bootstrap-server kafka1:9092 --topic states --group states --from-beginning
+
+^CProcessed a total of 0 messages
+root@ip-172-31-66-181:~/kafka/bin# ./kafka-console-producer.sh --broker-list kafka1:9092 --topic states
+>a
+>b
+>c
+>d
+>^Croot@ip-172-31-66-181:~/kafka/bin# ./kafka-console-consumer.sh --bootstrap-server kafka1:9092 --topic states --group states --from-beginning
+a
+c
+b
+d
+^CProcessed a total of 4 messages
+root@ip-172-31-66-181:~/kafka/bin# 
+root@ip-172-31-66-181:~/kafka/bin# ./kafka-console-consumer.sh --bootstrap-server kafka1:9092 --topic states --group states --from-beginning
+^CProcessed a total of 0 messages
+root@ip-172-31-66-181:~/kafka/bin# ./kafka-console-consumer.sh --bootstrap-server kafka1:9092 --topic states --from-beginning
+hyd
+vz
+mp
+behar
+kerala
+jammu
+a
+c
+bangalore
+mumbai
+goa
+rjastan
+b
+chennai
+up
+delhi
+pune
+d
+^CProcessed a total of 18 messages
+root@ip-172-31-66-181:~/kafka/bin# 
+
+./kafka-console-consumer.sh --bootstrap-server kafka1:9092 --topic states --group statesagain
+
+./kafka-console-consumer.sh --bootstrap-server kafka1:9092 --topic states --group statesagain --from-beginning
+
+root@ip-172-31-66-181:~/kafka/bin# ./kafka-consumer-groups.sh --bootstrap-server kafka1:9092 --list
+--list
+statesagain
+states
+root@ip-172-31-66-181:~/kafka/bin# 
+
+./kafka-topics.sh --bootstrap-server kafka1:9092 --list
+
+
+root@ip-172-31-66-181:~/kafka/bin# ./kafka-topics.sh --bootstrap-server kafka1:9092 --list
+__consumer_offsets
+quickstart-events
+states
+root@ip-172-31-66-181:~/kafka/bin# 
+
+root@ip-172-31-66-181:~/kafka/bin# ./kafka-topics.sh --bootstrap-server kafka1:9092 --describe --topic states
+Topic: states	PartitionCount: 3	ReplicationFactor: 1	Configs: segment.bytes=1073741824
+	Topic: states	Partition: 0	Leader: 0	Replicas: 0	Isr: 0
+	Topic: states	Partition: 1	Leader: 0	Replicas: 0	Isr: 0
+	Topic: states	Partition: 2	Leader: 0	Replicas: 0	Isr: 0
+root@ip-172-31-66-181:~/kafka/bin#
+
+./kafka-producer-perf-test.sh --topic states --num-records 10 --throughput 5 --record-size 10 --producer-props --bootstrap-server=kafka1:9092 
+
+root@ip-172-31-66-181:~/kafka/bin# ./kafka-producer-perf-test.sh --topic bharath --throughput -1 --num-records 3000000 --record-size 1024 --producer-props acks=all bootstrap.servers=kafka1:9092
+152160 records sent, 30425.9 records/sec (29.71 MB/sec), 760.3 ms avg latency, 1112.0 ms max latency.
+234315 records sent, 46863.0 records/sec (45.76 MB/sec), 663.6 ms avg latency, 850.0 ms max latency.
+261060 records sent, 52212.0 records/sec (50.99 MB/sec), 596.9 ms avg latency, 850.0 ms max latency.
+365430 records sent, 73086.0 records/sec (71.37 MB/sec), 425.4 ms avg latency, 687.0 ms max latency.
+389610 records sent, 77922.0 records/sec (76.10 MB/sec), 394.1 ms avg latency, 522.0 ms max latency.
+387360 records sent, 77472.0 records/sec (75.66 MB/sec), 396.1 ms avg latency, 517.0 ms max latency.
+356715 records sent, 71343.0 records/sec (69.67 MB/sec), 430.5 ms avg latency, 557.0 ms max latency.
+390735 records sent, 78147.0 records/sec (76.32 MB/sec), 393.2 ms avg latency, 508.0 ms max latency.
+388980 records sent, 77796.0 records/sec (75.97 MB/sec), 394.5 ms avg latency, 561.0 ms max latency.
+3000000 records sent, 65149.409312 records/sec (63.62 MB/sec), 459.72 ms avg latency, 1112.00 ms max latency, 430 ms 50th, 749 ms 95th, 844 ms 99th, 1079 ms 99.9th.
+root@ip-172-31-66-181:~/kafka/bin#
+
+
+
+=====================================================================================
+
+for kafka ssl certification adding
+-----------------------
+https://www.javatpoint.com/apache-kafka-applications
+https://medium.com/jinternals/kafka-ssl-setup-with-self-signed-certificate-part-1-c2679a57e16c
+https://github.com/jinternals/kafka_ssl_setup/tree/master/Part%201                                  (with docker and ssl kafka insatll)
+
+
+1. Create Kafka Server Certificate and store in KeyStore:
+
+
+keytool -keystore kafka.server.keystore.jks -alias localhost -validaty 365 -genkey
+
+password
+re-password
+what is your first and last name
+what is your organizational unit
+what is the name of your organization
+what is your city and locality
+what is your state
+what is the two letter country code
+yes
+password
+
+ll
+kafka.server.keystore.jks
+
+2. Create own private Certificate Authority (CA)
+
+openssl req -new -x509 -keyout ca-key -out ca-cert -days 365
+
+ls
+
+ca-cert  ca-key  kafka.server.keystore.jks
+
+3. Create Certificate signed request (CSR):
+
+keytool -keystore kafka.server.keystore.jks -alias localhost -certreq -file cert-file
+
+enter password of jks password
+
+4. Get CSR Signed with the CA:
+
+openssl x509 -req -CA ca-cert -CAkey ca-key -in cert-file -out cert-file-signed -days 365 -CAcreateserial -passin pass:<password>
+
+enter the password of CA password here
+
+5. Import CA certificate in KeyStore:
+
+keytool -keystore kafka.server.keystore.jks -alias CARoot -import -file ca-cert 
+
+here first one password here
+yes
+
+6. Import Signed CSR In KeyStore:
+
+keytool -keystore kafka.server.keystore.jks -alias localhost -import -file cert-file-signed
+
+here first one password here
+
+7. Import CA certificate In TrustStore:
+
+keytool -keystore kafka.server.truststore.jks -alias CARoot -import -file ca-cert
+
+here first one password here
+yes
+
+
+vim client-properties
+
+security.protocol=SSL
+ssl.truststore.location=/path/to/your/kafka.client.truststore.jks
+ssl.truststore.password=your_SSL_certificate_passphrase
+
+security.protocol=SSL
+ssl.truststore.location=/path/to/your/kafka.client.truststore.jks
+ssl.keystore.location=/path/to/your/kafka.client.keystore.jks
+ssl.truststore.password=your_SSL_certificate_passphrase
+ssl.keystore.password=passphrase
+
+bin/kafka-producer-perf-test.sh \
+--topic ssl-perf-test \
+--throughput -1 \
+--num-records 3000000 \
+--record-size 1024 \
+--producer-props acks=all bootstrap.servers=broker0:9093,broker1:9093,broker2:9093 \
+--producer.config /path/to/ssl-perf-test.properties
+
+
+./kafka-console-producer.sh --broker-list kafka1:9092 --topic states --producer.config /path/to/ssl-perf-test.properties
+
+> hi  now we are ssl encrypted
+
+
+https://medium.com/metrosystemsro/apache-kafka-how-to-test-performance-for-clients-configured-with-ssl-encryption-3356d3a0d52b
+
+https://medium.com/jinternals/kafka-ssl-setup-with-self-signed-certificate-part-1-c2679a57e16c
+============================
+
+
+
+#!/bin/bash
+#/etc/init.d/zookeeper
+DAEMON_PATH=/root/kafka/bin
+DAEMON_NAME=zookeeper
+# check that networking is up.
+#[ ${NETWORKING} = "no" ] && exit 0
+
+PATH=$PATH:$DAEMON_PATH
+
+# see how we are called.
+case "$1" in
+  start)
+        # start daemon.
+        pid= 'ps ax | gerp -i 'org.apache.zookeeper' | grep -v grep | awk '{print $1}''
+        if [ -n "$pid" ]
+          then
+            echo "zookeeper is already running";
+            
+        else
+          echo "starting $DAEMON_NAME";
+          $DAEMON_PATH/zookeeper-server-start.sh -daemon /root/kafka/config/zookeeper.properties
+        fi
+        ;;
+  stop)
+        echo "shuting down $DAEMON_NAME";
+        $DAEMON_PATH/zookeeper-server-stop.sh
+        ;;
+  restart)
+        $0 stop
+        sleep 2
+        $0 start
+  status)
+        pid= 'ps ax | gerp -i 'org.apache.zookeeper' | grep -v grep | awk '{print $1}''
+        if [ -n "$pid" ]
+          then
+          echo "zookeeper is running as PID: $pid"
+        else
+          echo "zookeeper is not running";
+        fi
+        ;;
+  *)
+           echo "usage: $0 {start|stop|restart|status}"
+           exit 1
+esac
+
+exit 0
+
+========================
+
+https://www.youtube.com/watch?v=ve-c_4kNJlU
+
+https://www.youtube.com/watch?v=WZIGJrjBpCI
+
+
+
+
+
+kafka perpormance checking with Jmeter
+
+
+https://www.javatpoint.com/kafka-topics   (this is very important)
+
+https://linuxhint.com/install_apache_jmeter_ubuntu/
+https://www.youtube.com/watch?v=99ar2jEwoEg
+
+
+kafka to mysql connecting
+
+https://hevodata.com/learn/kafka-to-mysql/
+
+apache kafka is published-subscribe messaging
+
+published= write
+subscibing= read
+
+1-> the who is who
+
+a. produser write data to broker
+b. consumer reads data from broker
+c. all this is distributed
+
+1. the data
+
+a. the data stored in Topics
+b. the topics are splited into partitions which are replicated.
+
+=====================================================
+
+In kubernetes Node affinity and pod affinity
+
+https://kubernetes.io/docs/tasks/configure-pod-container/assign-pods-nodes-using-node-affinity/
+
+Add a label to a node
+List the nodes in your cluster, along with their labels:
+
+kubectl get nodes --show-labels
+
+The output is similar to this:
+
+NAME      STATUS    ROLES    AGE     VERSION        LABELS
+worker0   Ready     <none>   1d      v1.13.0        ...,kubernetes.io/hostname=worker0
+worker1   Ready     <none>   1d      v1.13.0        ...,kubernetes.io/hostname=worker1
+worker2   Ready     <none>   1d      v1.13.0        ...,kubernetes.io/hostname=worker2
+Chose one of your nodes, and add a label to it:
+
+kubectl label nodes <your-node-name> disktype=ssd
+
+where <your-node-name> is the name of your chosen node.
+
+Verify that your chosen node has a disktype=ssd label:
+
+kubectl get nodes --show-labels
+
+The output is similar to this:
+
+NAME      STATUS    ROLES    AGE     VERSION        LABELS
+worker0   Ready     <none>   1d      v1.13.0        ...,disktype=ssd,kubernetes.io/hostname=worker0
+worker1   Ready     <none>   1d      v1.13.0        ...,kubernetes.io/hostname=worker1
+worker2   Ready     <none>   1d      v1.13.0        ...,kubernetes.io/hostname=worker2
+In the preceding output, you can see that the worker0 node has a disktype=ssd label.
+
+Schedule a Pod using required node affinity
+This manifest describes a Pod that has a requiredDuringSchedulingIgnoredDuringExecution node affinity,disktype: ssd. This means that the pod will get scheduled only on a node that has a disktype=ssd label.
+
+pods/pod-nginx-required-affinity.yaml Copy pods/pod-nginx-required-affinity.yaml to clipboard
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+spec:
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: disktype
+            operator: In
+            values:
+            - ssd            
+  containers:
+  - name: nginx
+    image: nginx
+    imagePullPolicy: IfNotPresent
+    
+    
+Apply the manifest to create a Pod that is scheduled onto your chosen node:
+
+kubectl apply -f https://k8s.io/examples/pods/pod-nginx-required-affinity.yaml
+Verify that the pod is running on your chosen node:
+
+kubectl get pods --output=wide
+The output is similar to this:
+
+NAME     READY     STATUS    RESTARTS   AGE    IP           NODE
+nginx    1/1       Running   0          13s    10.200.0.4   worker0
+Schedule a Pod using preferred node affinity
+This manifest describes a Pod that has a preferredDuringSchedulingIgnoredDuringExecution node affinity,disktype: ssd. This means that the pod will prefer a node that has a disktype=ssd label.
+
+pods/pod-nginx-preferred-affinity.yaml Copy pods/pod-nginx-preferred-affinity.yaml to clipboard
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+spec:
+  affinity:
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 1
+        preference:
+          matchExpressions:
+          - key: disktype
+            operator: In
+            values:
+            - ssd          
+  containers:
+  - name: nginx
+    image: nginx
+    imagePullPolicy: IfNotPresent
+    
+Apply the manifest to create a Pod that is scheduled onto your chosen node:
+
+kubectl apply -f https://k8s.io/examples/pods/pod-nginx-preferred-affinity.yaml
+Verify that the pod is running on your chosen node:
+
+kubectl get pods --output=wide
+
+The output is similar to this:
+
+NAME     READY     STATUS    RESTARTS   AGE    IP           NODE
+nginx    1/1       Running   0          13s    10.200.0.4   worker0
+
+Then add a nodeSelector like so:
+
+vim pods/pod-nginx.yaml
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+  labels:
+    env: test
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+    imagePullPolicy: IfNotPresent
+  nodeSelector:
+    disktype: ssd
+
+Here's an example of a pod that uses node affinity:
+
+vim pods/pod-with-node-affinity.yaml
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: with-node-affinity
+spec:
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: kubernetes.io/e2e-az-name
+            operator: In
+            values:
+            - e2e-az1
+            - e2e-az2
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 1
+        preference:
+          matchExpressions:
+          - key: another-node-label-key
+            operator: In
+            values:
+            - another-node-label-value
+  containers:
+  - name: with-node-affinity
+    image: k8s.gcr.io/pause:2.0
+    
+    
+    
+https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/
+
+https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/
+
+openssl rand 60 | openssl base64 -A
+
+FOWt6yyUKo5IXFvSQ0nZFue2wWBQA6I6XWSc142JJu90T8IolOfBUGr24KvQsvvS5P6SnCSRMmt2Pw9p
+
+===========================================
+
+
+./kafka-producer-perf-test.sh \
+--topic bharath \
+--throughput -1 \
+--num-records 3000000 \
+--record-size 1024 \
+--producer-props acks=all bootstrap.servers=kafka1:9092 \
+--producer.config /path/to/ssl-perf-test.properties
+
+
+
+
+=========================Redis=================
+
+https://www.digitalocean.com/community/tutorials/how-to-install-and-configure-redis-on-ubuntu-16-04   (Redis instalation)
+
+redis = aws-elastic cahi)
+
+
+sudo apt-get update
+sudo apt-get install build-essential tcl
+
+cd /tmp
+
+curl -O http://download.redis.io/redis-stable.tar.gz
+
+tar xzvf redis-stable.tar.gz
+
+cd redis-stable
+
+make
+
+make test
+
+sudo make install
+
+sudo mkdir /etc/redis
+
+sudo cp /tmp/redis-stable/redis.conf /etc/redis
+
+sudo vim /etc/redis/redis.conf
+
+. . .
+
+# If you run Redis from upstart or systemd, Redis can interact with your
+# supervision tree. Options:
+#   supervised no      - no supervision interaction
+#   supervised upstart - signal upstart by putting Redis into SIGSTOP mode
+#   supervised systemd - signal systemd by writing READY=1 to $NOTIFY_SOCKET
+#   supervised auto    - detect upstart or systemd method based on
+#                        UPSTART_JOB or NOTIFY_SOCKET environment variables
+# Note: these supervision methods only signal "process is ready."
+#       They do not enable continuous liveness pings back to your supervisor.
+supervised systemd
+
+. . .
+
+. . .
+
+# The working directory.
+#
+# The DB will be written inside this directory, with the filename specified
+# above using the 'dbfilename' configuration directive.
+#
+# The Append Only File will also be created inside this directory.
+#
+# Note that you must specify a directory here, not a file name.
+dir /var/lib/redis
+
+. . .
+
+
+sudo vim /etc/systemd/system/redis.service
+
+[Unit]
+Description=Redis In-Memory Data Store
+After=network.target
+
+[Unit]
+Description=Redis In-Memory Data Store
+After=network.target
+
+[Service]
+User=redis
+Group=redis
+ExecStart=/usr/local/bin/redis-server /etc/redis/redis.conf
+ExecStop=/usr/local/bin/redis-cli shutdown
+Restart=always
+
+[Unit]
+Description=Redis In-Memory Data Store
+After=network.target
+
+[Service]
+User=redis
+Group=redis
+ExecStart=/usr/local/bin/redis-server /etc/redis/redis.conf
+ExecStop=/usr/local/bin/redis-cli shutdown
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+
+
+Save and close the file when you are finished.
+
+Create the Redis User, Group and Directories
+Now, we just have to create the user, group, and directory that we referenced in the previous two files.
+
+Begin by creating the redis user and group. This can be done in a single command by typing:
+
+
+sudo adduser --system --group --no-create-home redis
+
+sudo mkdir /var/lib/redis
+
+
+sudo chown redis:redis /var/lib/redis
+
+sudo chmod 770 /var/lib/redis
+
+Start and Test Redis
+Now, we are ready to start the Redis server.
+
+Start the Redis Service
+Start up the systemd service by typing:
+
+sudo systemctl start redis
+
+sudo systemctl status redis
+
+
+sudo systemctl enable redis
