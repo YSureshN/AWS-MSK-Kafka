@@ -29,3 +29,8 @@ Producer:
 
 Consumer:
 ./kafka-console-consumer.sh --bootstrap-server BootstrapBrokerStringTls --consumer.config client.properties --topic AWSKafkaTutorialTopic --from-beginning
+
+
+EC2 linux Kafka Full Video Link= https://www.youtube.com/watch?v=WZIGJrjBpCI&t=2744s
+
+MSK Kafka Video= https://www.youtube.com/watch?v=y4wowEQd4Os&t=1023s
